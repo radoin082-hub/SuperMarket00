@@ -214,23 +214,16 @@ public class SupermarketSimulation {
     private class CheckoutActionListener implements ActionListener {
         @Override
         public void actionPerformed(ActionEvent e) {
-            if (cart.isEmpty()) {
-                JOptionPane.showMessageDialog(frame, "Your cart is empty.");
-                return;
-            }
-
-            // Get amount paid and calculate remaining balance
             try {
                 double amountPaid = Double.parseDouble(amountPaidField.getText());
-                double remainingBalance = amountPaid - totalPrice;
+                if (amountPaid >= totalPrice) {
+                    double remainingBalance = amountPaid - totalPrice;
+                    balanceLabel.setText("Remaining: $" + remainingBalance);
 
-                balanceLabel.setText("Remaining: $" + String.format("%.2f", remainingBalance));
-
-                if (remainingBalance < 0) {
-                    JOptionPane.showMessageDialog(frame, "Insufficient funds! Please pay the total amount.");
+                    // Update JADE panel with action
+                    jadeStatusArea.append("Checkout successful. Amount paid: $" + amountPaid + "\n");
                 } else {
-                    // Proceed with agent communication
-                    simulateAgents();
+                    JOptionPane.showMessageDialog(frame, "Insufficient funds for checkout.");
                 }
             } catch (NumberFormatException ex) {
                 JOptionPane.showMessageDialog(frame, "Please enter a valid amount.");
@@ -238,35 +231,21 @@ public class SupermarketSimulation {
         }
     }
 
-    // Update cart display
+    // Update cart display in GUI
     private void updateCartDisplay() {
         cartArea.setText("");
         for (String productName : cart.keySet()) {
-            cartArea.append(productName + " (x" + cart.get(productName) + ")\n");
+            Product product = inventory.get(productName);
+            int quantityInCart = cart.get(productName);
+            cartArea.append(productName + " x" + quantityInCart + " - $" + (product.getPrice() * quantityInCart) + "\n");
         }
-        totalLabel.setText("Total: $" + String.format("%.2f", totalPrice));
+        totalLabel.setText("Total: $" + totalPrice);
     }
 
-    // Simulate agent communication
-    private void simulateAgents() {
-        System.out.println("BuyerAgent: Placing order...");
-        for (String product : cart.keySet()) {
-            int quantity = cart.get(product);
-            System.out.println("SellerAgent: Checking stock for " + product + " (x" + quantity + ")");
-        }
-        System.out.println("CashierAgent: Processing payment...");
-
-        // Update JADE panel with agent actions
-        jadeStatusArea.append("BuyerAgent: Placing order...\n");
-        for (String product : cart.keySet()) {
-            int quantity = cart.get(product);
-            jadeStatusArea.append("SellerAgent: Checking stock for " + product + " (x" + quantity + ")\n");
-        }
-        jadeStatusArea.append("CashierAgent: Processing payment...\n");
-    }
-
-    // Run the simulation
+    // Main method to start the simulation
     public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> new SupermarketSimulation());
+        SwingUtilities.invokeLater(() -> {
+            new SupermarketSimulation();
+        });
     }
 }
