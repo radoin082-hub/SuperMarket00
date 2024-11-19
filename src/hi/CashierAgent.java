@@ -1,8 +1,8 @@
-import jade.core.Agent;
-
-public class CashierAgent extends Agent {
+public class CashierAgent extends SupermarketAgent {
     @Override
     protected void setup() {
-        System.out.println(getLocalName() + " is ready to process payments!");
+        super.setup();
+        // Simulate a communication with the Buyer and Seller agents
+        sendMessage("BuyerAgent", "Please proceed to checkout.");
     }
 }
