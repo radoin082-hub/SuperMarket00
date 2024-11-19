@@ -148,21 +148,28 @@ public class SupermarketSimulation {
             try {
                 quantity = Integer.parseInt(quantityField.getText());
                 if (quantity <= 0) throw new NumberFormatException();
+
                 if (selectedProduct.getStock() >= quantity) {
+                    // إضافة المنتج إلى السلة
                     cart.put(selectedProduct.getName(), cart.getOrDefault(selectedProduct.getName(), 0) + quantity);
                     selectedProduct.decreaseStock(quantity);
                     totalPrice += selectedProduct.getPrice() * quantity;
                     totalLabel.setText("Total: $" + totalPrice);
                     cartArea.append(selectedProduct.getName() + " x" + quantity + "\n");
+
+                    // تحديث منطقة الشاري
                     buyerArea.append("Added " + quantity + " " + selectedProduct.getName() + " to cart.\n");
+                    buyerArea.append("Remaining stock: " + selectedProduct.getStock() + " items.\n");
+                    sellerArea.append("Sold " + quantity + " " + selectedProduct.getName() + ".\n");
                 } else {
-                    JOptionPane.showMessageDialog(frame, "Not enough stock.");
+                    buyerArea.append("Not enough stock."+ ".\n");
                 }
             } catch (NumberFormatException ex) {
-                JOptionPane.showMessageDialog(frame, "Please enter a valid quantity.");
+                buyerArea.append("Please enter a valid quantity."+ ".\n");
             }
         }
     }
+
 
     private class RemoveItemActionListener implements ActionListener {
         @Override
@@ -176,8 +183,9 @@ public class SupermarketSimulation {
                 cartArea.setText("");
                 cart.forEach((key, value) -> cartArea.append(key + " x" + value + "\n"));
                 buyerArea.append("Removed " + quantity + " " + selectedProduct.getName() + " from cart.\n");
+                sellerArea.append("Returned " + quantity + " " + selectedProduct.getName() + ".\n");
             } else {
-                JOptionPane.showMessageDialog(frame, "Item not found in cart.");
+                buyerArea.append("Item not found in cart."+ ".\n");
             }
         }
     }
@@ -194,11 +202,12 @@ public class SupermarketSimulation {
                     cart.clear();
                     updateCartDisplay();
                     cashierArea.append("Checkout complete. Change: $" + change + "\n");
+                    sellerArea.append("Received payment of $" + amountPaid + ".\n");
                 } else {
-                    JOptionPane.showMessageDialog(frame, "Insufficient funds for checkout.");
+                    cashierArea.append("Insufficient funds for checkout."+ ".\n");
                 }
             } catch (NumberFormatException ex) {
-                JOptionPane.showMessageDialog(frame, "Please enter a valid amount.");
+                cashierArea.append("Please enter a valid amount."+ ".\n");
             }
         }
     }
