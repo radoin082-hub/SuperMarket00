@@ -1,10 +1,7 @@
 import jade.core.*;
-import jade.core.behaviours.*;
 import jade.wrapper.*;
 import jade.lang.acl.ACLMessage;
-import jade.lang.acl.MessageTemplate;
 import jade.wrapper.AgentContainer;
-
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
@@ -16,82 +13,67 @@ public class SupermarketSimulation {
     private JComboBox<Product> productDropdown;
     private JTextField quantityField;
     private JTextArea cartArea;
-    private JButton addToCartButton, checkoutButton, removeItemButton;
+    private JButton addToCartButton, removeItemButton, checkoutButton;
     private JLabel totalLabel, balanceLabel;
     private JTextField amountPaidField;
     private HashMap<String, Product> inventory;
     private HashMap<String, Integer> cart;
     private double totalPrice = 0.0;
 
-    // JADE Container
     private jade.core.Runtime runtime;
     private AgentContainer container;
+    private JTextArea buyerArea, sellerArea, cashierArea;
 
-    // Add a new JTextArea to display JADE agent communication
-    private JTextArea jadeStatusArea;
-
-    // Constructor to initialize everything
     public SupermarketSimulation() {
         initializeJADE();
         initializeInventory();
         initializeGUI();
     }
 
-    // Initialize JADE runtime
     private void initializeJADE() {
         try {
-            // Create the JADE runtime
             runtime = jade.core.Runtime.instance();
             Profile profile = new ProfileImpl();
             container = runtime.createMainContainer(profile);
 
-            // Start Buyer, Seller, and Cashier agents
-            startAgent("BuyerAgent");
-            startAgent("SellerAgent");
-            startAgent("CashierAgent");
+            // Start agents and pass JTextArea for communication
+            startAgent("BuyerAgent", buyerArea);
+            startAgent("SellerAgent", sellerArea);
+            startAgent("CashierAgent", cashierArea);
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
-    // Start a JADE agent
-    private void startAgent(String agentName) {
+    private void startAgent(String agentName, JTextArea communicationArea) {
         try {
-            AgentController agentController = container.createNewAgent(agentName, SupermarketAgent.class.getName(), new Object[]{});
+            AgentController agentController = container.createNewAgent(agentName, SupermarketAgent.class.getName(), new Object[] { communicationArea });
             agentController.start();
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
-    // Initialize the product inventory
     private void initializeInventory() {
         inventory = new HashMap<>();
         inventory.put("Apples", new Product("Apples", 1.50, 50, "C://Users//radoi//Downloads//icons8-apple-100.png"));
-        inventory.put("Bananas", new Product("Bananas", 0.99, 60, "C://Users//radoi//Downloads//icons8-banana-64.png"));
-        inventory.put("Milk", new Product("Milk", 2.49, 30, "resources/milk.jpg"));
-        inventory.put("Bread", new Product("Bread", 1.99, 40, "resources/bread.jpg"));
-        inventory.put("Eggs", new Product("Eggs", 3.99, 20, "resources/eggs.jpg"));
-        inventory.put("Chocolate", new Product("Chocolate", 4.99, 15, "resources/chocolate.jpg"));
-        inventory.put("Orange Juice", new Product("Orange Juice", 3.49, 25, "resources/orange_juice.jpg"));
-        inventory.put("Cereal", new Product("Cereal", 2.99, 50, "resources/cereal.jpg"));
-
+        inventory.put("Bananas", new Product("Bananas", 0.99, 60, "C:/Users/radoi/Downloads/icons8-banana-64.png"));
+        inventory.put("Milk", new Product("Milk", 2.49, 30, "C://path_to_image/milk.png"));
+        inventory.put("Bread", new Product("Bread", 1.99, 40, "C://path_to_image/bread.png"));
+        inventory.put("Eggs", new Product("Eggs", 3.99, 20, "C://path_to_image/eggs.png"));
         cart = new HashMap<>();
     }
 
-    // Initialize the GUI layout
     private void initializeGUI() {
         frame = new JFrame("Supermarket Simulation");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setSize(800, 600);
+        frame.setSize(1000, 600);
 
-        // Set up the top panel for product selection and quantity input
+        // Product selection panel
         JPanel topPanel = new JPanel(new GridLayout(3, 2, 10, 10));
         topPanel.setBorder(BorderFactory.createTitledBorder("Product Selection"));
         productDropdown = new JComboBox<>(inventory.values().toArray(new Product[0]));
         quantityField = new JTextField();
-
-        // Use a custom renderer to display product image and name in the dropdown
         productDropdown.setRenderer(new ProductRenderer());
 
         topPanel.add(new JLabel("Select Product:"));
@@ -99,84 +81,82 @@ public class SupermarketSimulation {
         topPanel.add(new JLabel("Enter Quantity:"));
         topPanel.add(quantityField);
 
-        // Center panel for cart display and buttons
+        // Cart area panel
         JPanel centerPanel = new JPanel(new BorderLayout());
         cartArea = new JTextArea(15, 40);
         cartArea.setEditable(false);
         JScrollPane scrollPane = new JScrollPane(cartArea);
         centerPanel.add(scrollPane, BorderLayout.CENTER);
 
-        // Bottom panel for actions (Add to Cart, Remove, Checkout)
+        // Bottom panel for buttons
         JPanel bottomPanel = new JPanel();
         addToCartButton = new JButton("Add to Cart");
         removeItemButton = new JButton("Remove Item");
         checkoutButton = new JButton("Checkout");
         totalLabel = new JLabel("Total: $0.00");
-
-        // New panel for amount paid and remaining balance
         JPanel paymentPanel = new JPanel();
         paymentPanel.add(new JLabel("Amount Paid:"));
         amountPaidField = new JTextField(10);
         balanceLabel = new JLabel("Remaining: $0.00");
-
         paymentPanel.add(amountPaidField);
         paymentPanel.add(balanceLabel);
-
         bottomPanel.add(addToCartButton);
         bottomPanel.add(removeItemButton);
         bottomPanel.add(checkoutButton);
         bottomPanel.add(totalLabel);
         bottomPanel.add(paymentPanel);
 
-        // New panel to display JADE communication status
+        // 3 Areas for communication (Buyer, Seller, Cashier)
         JPanel jadePanel = new JPanel();
-        jadePanel.setLayout(new BorderLayout());
-        jadeStatusArea = new JTextArea(8, 40);
-        jadeStatusArea.setEditable(false);
-        jadeStatusArea.setBorder(BorderFactory.createTitledBorder("JADE Agent Communication"));
-        jadePanel.add(new JScrollPane(jadeStatusArea), BorderLayout.CENTER);
+        jadePanel.setLayout(new GridLayout(3, 1, 10, 10));
 
-        // Add action listeners
+        buyerArea = createCommunicationArea("Buyer Communication");
+        sellerArea = createCommunicationArea("Seller Communication");
+        cashierArea = createCommunicationArea("Cashier Communication");
+
+        jadePanel.add(new JScrollPane(buyerArea));
+        jadePanel.add(new JScrollPane(sellerArea));
+        jadePanel.add(new JScrollPane(cashierArea));
+
+        // Action listeners
         addToCartButton.addActionListener(new AddToCartActionListener());
         removeItemButton.addActionListener(new RemoveItemActionListener());
         checkoutButton.addActionListener(new CheckoutActionListener());
 
-        // Assemble the frame
+        // Final setup
         frame.setLayout(new BorderLayout());
         frame.add(topPanel, BorderLayout.NORTH);
         frame.add(centerPanel, BorderLayout.CENTER);
         frame.add(bottomPanel, BorderLayout.SOUTH);
-        frame.add(jadePanel, BorderLayout.EAST); // Add the JADE panel to the East of the frame
-
+        frame.add(jadePanel, BorderLayout.EAST);
         frame.setVisible(true);
     }
 
-    // Add product to the cart
+    private JTextArea createCommunicationArea(String title) {
+        JTextArea textArea = new JTextArea(8, 40);
+        textArea.setEditable(false);
+        textArea.setBorder(BorderFactory.createTitledBorder(title));
+        return textArea;
+    }
+
+    // Action Listeners
     private class AddToCartActionListener implements ActionListener {
         @Override
         public void actionPerformed(ActionEvent e) {
             Product selectedProduct = (Product) productDropdown.getSelectedItem();
             int quantity;
-
             try {
                 quantity = Integer.parseInt(quantityField.getText());
                 if (quantity <= 0) throw new NumberFormatException();
-
                 if (selectedProduct.getStock() >= quantity) {
-                    // Update cart and inventory
                     cart.put(selectedProduct.getName(), cart.getOrDefault(selectedProduct.getName(), 0) + quantity);
                     selectedProduct.decreaseStock(quantity);
-
-                    // Update total price
                     totalPrice += selectedProduct.getPrice() * quantity;
-
-                    // Update cart display
-                    updateCartDisplay();
-
-                    // Update JADE panel with action
-                    jadeStatusArea.append("Added " + quantity + " " + selectedProduct.getName() + " to cart.\n");
+                    totalLabel.setText("Total: $" + totalPrice);
+                    cartArea.append(selectedProduct.getName() + " x" + quantity + "\n");
+                    buyerArea.append("Added " + quantity + " " + selectedProduct.getName() + " to cart.\n");
                 } else {
-                    JOptionPane.showMessageDialog(frame, "Insufficient stock for " + selectedProduct.getName());
+                    JOptionPane.showMessageDialog(frame, "Not enough stock.");
                 }
             } catch (NumberFormatException ex) {
                 JOptionPane.showMessageDialog(frame, "Please enter a valid quantity.");
@@ -184,44 +164,36 @@ public class SupermarketSimulation {
         }
     }
 
-    // Remove item from the cart
     private class RemoveItemActionListener implements ActionListener {
         @Override
         public void actionPerformed(ActionEvent e) {
             Product selectedProduct = (Product) productDropdown.getSelectedItem();
-
             if (cart.containsKey(selectedProduct.getName())) {
-                int quantityInCart = cart.get(selectedProduct.getName());
-                // Update total price and inventory
-                totalPrice -= selectedProduct.getPrice() * quantityInCart;
-                selectedProduct.increaseStock(quantityInCart);
-
-                // Remove item from the cart
+                int quantity = cart.get(selectedProduct.getName());
                 cart.remove(selectedProduct.getName());
-
-                // Update cart display
-                updateCartDisplay();
-
-                // Update JADE panel with action
-                jadeStatusArea.append("Removed " + quantityInCart + " " + selectedProduct.getName() + " from cart.\n");
+                totalPrice -= selectedProduct.getPrice() * quantity;
+                totalLabel.setText("Total: $" + totalPrice);
+                cartArea.setText("");
+                cart.forEach((key, value) -> cartArea.append(key + " x" + value + "\n"));
+                buyerArea.append("Removed " + quantity + " " + selectedProduct.getName() + " from cart.\n");
             } else {
-                JOptionPane.showMessageDialog(frame, "Product not in cart.");
+                JOptionPane.showMessageDialog(frame, "Item not found in cart.");
             }
         }
     }
 
-    // Handle checkout process
     private class CheckoutActionListener implements ActionListener {
         @Override
         public void actionPerformed(ActionEvent e) {
             try {
                 double amountPaid = Double.parseDouble(amountPaidField.getText());
                 if (amountPaid >= totalPrice) {
-                    double remainingBalance = amountPaid - totalPrice;
-                    balanceLabel.setText("Remaining: $" + remainingBalance);
-
-                    // Update JADE panel with action
-                    jadeStatusArea.append("Checkout successful. Amount paid: $" + amountPaid + "\n");
+                    double change = amountPaid - totalPrice;
+                    balanceLabel.setText("Remaining: $" + change);
+                    totalPrice = 0;
+                    cart.clear();
+                    updateCartDisplay();
+                    cashierArea.append("Checkout complete. Change: $" + change + "\n");
                 } else {
                     JOptionPane.showMessageDialog(frame, "Insufficient funds for checkout.");
                 }
@@ -231,21 +203,16 @@ public class SupermarketSimulation {
         }
     }
 
-    // Update cart display in GUI
     private void updateCartDisplay() {
         cartArea.setText("");
         for (String productName : cart.keySet()) {
-            Product product = inventory.get(productName);
-            int quantityInCart = cart.get(productName);
-            cartArea.append(productName + " x" + quantityInCart + " - $" + (product.getPrice() * quantityInCart) + "\n");
+            int quantity = cart.get(productName);
+            cartArea.append(productName + " x" + quantity + "\n");
         }
         totalLabel.setText("Total: $" + totalPrice);
     }
 
-    // Main method to start the simulation
     public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> {
-            new SupermarketSimulation();
-        });
+        SwingUtilities.invokeLater(SupermarketSimulation::new);
     }
 }
